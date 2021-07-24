@@ -4,11 +4,7 @@ scrapy is a simple web scraper, built on .NET, docker and Selenium.
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
-
-```bash
-pip install foobar
-```
+TODO
 
 ## Usage
 
