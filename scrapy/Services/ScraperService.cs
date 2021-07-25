@@ -60,12 +60,11 @@ namespace scrapy.Services
 
                             var pageSource = driver.PageSource;
                             _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, pageSource));
-
-                            //Console.WriteLine(driver.PageSource);
                         }
                         catch (WebDriverException e)
                         {
                             _logger.LogError($"Exception occurred in WebDriver, '{e}");
+                            _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Error, e.ToString()));
                             resetWebDriver = true;
                         }
                     }
