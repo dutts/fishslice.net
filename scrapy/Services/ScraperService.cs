@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenQA.Selenium;
@@ -12,11 +13,13 @@ namespace scrapy.Services
     public class ScraperService : BackgroundService
     {
         private readonly RequestQueue _requestQueue;
+        private readonly MemoryCache _scrapeResultCache;
         private readonly ILogger<ScraperService> _logger;
 
-        public ScraperService(RequestQueue requestQueue, ILogger<ScraperService> logger)
+        public ScraperService(RequestQueue requestQueue, MemoryCache scrapeResultCache, ILogger<ScraperService> logger)
         {
             _requestQueue = requestQueue;
+            _scrapeResultCache = scrapeResultCache;
             _logger = logger;
         }
 
@@ -45,15 +48,20 @@ namespace scrapy.Services
 
                 while (!resetWebDriver)
                 {
-                    if (_requestQueue.TryDequeue(out Uri uri))
+                    if (_requestQueue.TryDequeue(out UriRequest uriRequest))
                     {
+                        var uri = uriRequest.UriString;
+
                         _logger.LogInformation($"Dequeued '{uri}'");
 
                         try
                         {
                             driver.Navigate().GoToUrl(uri);
 
-                            Console.WriteLine(driver.PageSource);
+                            var pageSource = driver.PageSource;
+                            _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, pageSource));
+
+                            //Console.WriteLine(driver.PageSource);
                         }
                         catch (WebDriverException e)
                         {

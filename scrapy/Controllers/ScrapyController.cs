@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace scrapy.Controllers
@@ -10,26 +11,46 @@ namespace scrapy.Controllers
     public class ScrapyController : ControllerBase
     {
         private readonly RequestQueue _requestQueue;
+        private readonly MemoryCache _scrapeResultCache;
         private readonly ILogger<ScrapyController> _logger;
 
-        public ScrapyController(RequestQueue requestQueue, ILogger<ScrapyController> logger)
+        public ScrapyController(RequestQueue requestQueue, MemoryCache scrapeResultCache, ILogger<ScrapyController> logger)
         {
             _requestQueue = requestQueue;
+            _scrapeResultCache = scrapeResultCache;
             _logger = logger;
         }
 
-        [HttpPost("/request")]
+        [HttpPost("/requestUri")]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult Post(Uri uri)
+        public IActionResult Post(string uriString)
         {
-            _logger.LogInformation($"Handling POST request, received '{uri}'");
-            if (uri == null) return new BadRequestResult();
+            _logger.LogInformation($"Handling POST request, received '{uriString}'");
 
-            _logger.LogInformation($"Enqueuing '{uri}'");
-            _requestQueue.Enqueue(uri);
+            var requestId = Guid.NewGuid();
 
-            return new AcceptedResult();
+            _logger.LogInformation($"Enqueuing '{uriString}' with request id '{requestId}'");
+            _requestQueue.Enqueue(new UriRequest(requestId, uriString));
+
+            return Ok(new UriRequestResponse(requestId));
+        }
+
+        [HttpGet("/requestId")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public IActionResult Get(Guid requestId)
+        {
+            _logger.LogInformation($"Handling GET request, received request for '{requestId}'");
+
+            if(_scrapeResultCache.TryGetValue(requestId, out UriScrapeResponse response))
+            {
+                return Ok(response);
+            }
+            else
+            {
+                return NotFound();
+            }
         }
     }
 }
