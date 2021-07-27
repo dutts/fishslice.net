@@ -19,7 +19,9 @@ namespace scrapy
                 {
                     services.AddSingleton<MemoryCache>();
                     services.AddSingleton<RequestQueue>();
+                    services.AddSingleton<ScreenshotRequestQueue>();
                     services.AddHostedService<ScraperService>();
+                    services.AddHostedService<ScraperScreenshotService>();
                 })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
@@ -11,17 +12,17 @@ using scrapy.Queue;
 
 namespace scrapy.Services
 {
-    public class RequestQueue : ConcurrentReferenceQueue<UriRequest> { }
+    public class ScreenshotRequestQueue : ConcurrentReferenceQueue<UriRequest> { }
 
-    public class ScraperService : BackgroundService
+    public class ScraperScreenshotService : BackgroundService
     {
-        private readonly RequestQueue _requestQueue;
+        private readonly ScreenshotRequestQueue _requestScreenshotQueue;
         private readonly MemoryCache _scrapeResultCache;
         private readonly ILogger<ScraperService> _logger;
 
-        public ScraperService(RequestQueue requestQueue, MemoryCache scrapeResultCache, ILogger<ScraperService> logger)
+        public ScraperScreenshotService(ScreenshotRequestQueue requestScreenshotQueue, MemoryCache scrapeResultCache, ILogger<ScraperService> logger)
         {
-            _requestQueue = requestQueue;
+            _requestScreenshotQueue = requestScreenshotQueue;
             _scrapeResultCache = scrapeResultCache;
             _logger = logger;
         }
@@ -51,18 +52,30 @@ namespace scrapy.Services
 
                 while (!resetWebDriver)
                 {
-                    if (_requestQueue.TryDequeue(out UriRequest uriRequest))
+                    if (_requestScreenshotQueue.TryDequeue(out UriRequest uriRequest))
                     {
                         var uri = uriRequest.UriString;
 
-                        _logger.LogInformation($"Dequeued page source request for '{uri}'");
+                        _logger.LogInformation($"Dequeued screenshot request for '{uri}'");
 
                         try
                         {
                             driver.Navigate().GoToUrl(uri);
 
-                            var pageSource = driver.PageSource;
-                            _scrapeResultCache.Set($"{uriRequest.RequestId}_SRC", new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, pageSource));
+                            await Task.Delay(1000);
+
+                            _logger.LogInformation($"Begin screenshotting '{uri}'");
+
+                            var totalWidth = (int)(long)((IJavaScriptExecutor)driver).ExecuteScript("return document.body.offsetWidth");
+                            var totalHeight = (int)(long)((IJavaScriptExecutor)driver).ExecuteScript("return document.body.parentNode.scrollHeight");
+
+                            driver.Manage().Window.Size = new System.Drawing.Size(totalWidth, totalHeight);
+
+                            var screenshotString = driver.GetScreenshot().AsBase64EncodedString;
+
+                            _logger.LogInformation($"End screenshotting '{uri}'");
+
+                            _scrapeResultCache.Set($"{uriRequest.RequestId}_SHT", new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, screenshotString));
                         }
                         catch (WebDriverException e)
                         {
