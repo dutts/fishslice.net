@@ -12,7 +12,7 @@ using scrapy.Queue;
 
 namespace scrapy.Services
 {
-    public class ScreenshotRequestQueue : ConcurrentReferenceQueue<UriRequest> { }
+    public class ScreenshotRequestQueue : ConcurrentReferenceQueue<UriRequestQueueItem> { }
 
     public class ScraperScreenshotService : BackgroundService
     {
@@ -52,7 +52,7 @@ namespace scrapy.Services
 
                 while (!resetWebDriver)
                 {
-                    if (_requestScreenshotQueue.TryDequeue(out UriRequest uriRequest))
+                    if (_requestScreenshotQueue.TryDequeue(out UriRequestQueueItem uriRequest))
                     {
                         var uri = uriRequest.UriString;
 
@@ -75,12 +75,12 @@ namespace scrapy.Services
 
                             _logger.LogInformation($"End screenshotting '{uri}'");
 
-                            _scrapeResultCache.Set($"{uriRequest.RequestId}_SHT", new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, screenshotString));
+                            _scrapeResultCache.Set(new ScrapeResultCacheKey(uriRequest.RequestId, ResourceType.Screenshot), new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, ResourceType.Screenshot, screenshotString));
                         }
                         catch (WebDriverException e)
                         {
                             _logger.LogError($"Exception occurred in WebDriver, '{e}");
-                            _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Error, e.ToString()));
+                            _scrapeResultCache.Set(new ScrapeResultCacheKey(uriRequest.RequestId, ResourceType.Screenshot), new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Error, ResourceType.Screenshot, e.ToString()));
                             resetWebDriver = true;
                         }
                     }

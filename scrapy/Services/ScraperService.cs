@@ -11,7 +11,7 @@ using scrapy.Queue;
 
 namespace scrapy.Services
 {
-    public class RequestQueue : ConcurrentReferenceQueue<UriRequest> { }
+    public class RequestQueue : ConcurrentReferenceQueue<UriRequestQueueItem> { }
 
     public class ScraperService : BackgroundService
     {
@@ -51,7 +51,7 @@ namespace scrapy.Services
 
                 while (!resetWebDriver)
                 {
-                    if (_requestQueue.TryDequeue(out UriRequest uriRequest))
+                    if (_requestQueue.TryDequeue(out UriRequestQueueItem uriRequest))
                     {
                         var uri = uriRequest.UriString;
 
@@ -62,12 +62,12 @@ namespace scrapy.Services
                             driver.Navigate().GoToUrl(uri);
 
                             var pageSource = driver.PageSource;
-                            _scrapeResultCache.Set($"{uriRequest.RequestId}_SRC", new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, pageSource));
+                            _scrapeResultCache.Set(new ScrapeResultCacheKey(uriRequest.RequestId, ResourceType.PageSource), new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, ResourceType.PageSource, pageSource));
                         }
                         catch (WebDriverException e)
                         {
                             _logger.LogError($"Exception occurred in WebDriver, '{e}");
-                            _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Error, e.ToString()));
+                            _scrapeResultCache.Set(new ScrapeResultCacheKey(uriRequest.RequestId, ResourceType.PageSource), new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Error, ResourceType.PageSource, e.ToString()));
                             resetWebDriver = true;
                         }
                     }

@@ -2,9 +2,19 @@
 
 namespace scrapy
 {
+    public enum ResourceType
+    {
+        PageSource,
+        Screenshot
+    }
+
+    public record UriRequest(string UriString, ResourceType ResourceType);
+
     public record UriRequestResponse(Guid RequestId);
 
-    public record UriRequest(Guid RequestId, string UriString);
+    public record ScrapeResultCacheKey(Guid RequestId, ResourceType ResourceType);
+
+    public record UriRequestQueueItem(Guid RequestId, string UriString);
 
     public enum ScrapeResult
     {
@@ -12,5 +22,5 @@ namespace scrapy
         Error
     }
 
-    public record UriScrapeResponse(Guid RequestId, ScrapeResult ScrapeResult, string Result);
+    public record UriScrapeResponse(Guid RequestId, ScrapeResult ScrapeResult, ResourceType ResultType, string ResultString);
 }

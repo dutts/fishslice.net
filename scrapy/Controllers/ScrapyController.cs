@@ -27,58 +27,36 @@ namespace scrapy.Controllers
         [HttpPost("/requestUri")]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult Post(string uriString)
+        public IActionResult Post(UriRequest request)
         {
-            _logger.LogInformation($"Handling POST request, received '{uriString}'");
+            _logger.LogInformation($"Handling POST request, received '{request.UriString}'");
 
             var requestId = Guid.NewGuid();
 
-            _logger.LogInformation($"Enqueuing '{uriString}' with request id '{requestId}'");
-            _requestQueue.Enqueue(new UriRequest(requestId, uriString));
+            _logger.LogInformation($"Enqueuing request for '{request.ResourceType}' of '{request.UriString}' with request id '{requestId}'");
 
+            switch (request.ResourceType)
+            {
+                case ResourceType.PageSource:
+                    _requestQueue.Enqueue(new UriRequestQueueItem(requestId, request.UriString));
+                    break;
+                case ResourceType.Screenshot:
+                    _screenshotRequestQueue.Enqueue(new UriRequestQueueItem(requestId, request.UriString));
+                    break;
+            }
+            
             return Ok(new UriRequestResponse(requestId));
         }
 
         [HttpGet("/requestId")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult Get(Guid requestId)
+        public IActionResult Get(Guid requestId, ResourceType resourceType)
         {
-            _logger.LogInformation($"Handling GET request, received request for '{requestId}'");
+            _logger.LogInformation($"Handling GET request, received request for '{resourceType}' with request id '{requestId}'");
 
-            if(_scrapeResultCache.TryGetValue($"{requestId}_SRC", out UriScrapeResponse response))
-            {
-                return Ok(response);
-            }
-            else
-            {
-                return NotFound();
-            }
-        }
-
-        [HttpPost("/requestScreenshotUri")]
-        [ProducesResponseType(StatusCodes.Status202Accepted)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult PostScreenshot(string uriString)
-        {
-            _logger.LogInformation($"Handling POST request, received '{uriString}'");
-
-            var requestId = Guid.NewGuid();
-
-            _logger.LogInformation($"Enqueuing '{uriString}' with request id '{requestId}'");
-            _screenshotRequestQueue.Enqueue(new UriRequest(requestId, uriString));
-
-            return Ok(new UriRequestResponse(requestId));
-        }
-
-        [HttpGet("/requestScreenshotId")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult GetScreenshot(Guid requestId)
-        {
-            _logger.LogInformation($"Handling GET request, received request for '{requestId}'");
-
-            if (_scrapeResultCache.TryGetValue($"{requestId}_SHT", out UriScrapeResponse response))
+            var lookup = new ScrapeResultCacheKey(requestId, resourceType);
+            if (_scrapeResultCache.TryGetValue(lookup, out UriScrapeResponse response))
             {
                 return Ok(response);
             }
