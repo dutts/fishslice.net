@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using scrapy.Services;
+using fishslice.Services;
 
-namespace scrapy
+namespace fishslice
 {
     public class Program
     {

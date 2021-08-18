@@ -1,6 +1,6 @@
-# scrapy.net
+# fishslice
 
-scrapy.net is a simple web scraper api, built on .NET, docker and Selenium.
+fishslice is a simple web scraper api, built on .NET, docker and Selenium.
 
 ## Schema
 
@@ -8,14 +8,14 @@ scrapy.net is a simple web scraper api, built on .NET, docker and Selenium.
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "scrapy",
+    "title": "fishslice",
     "version": "v1"
   },
   "paths": {
     "/requestUri": {
       "post": {
         "tags": [
-          "Scrapy"
+          "Scrape"
         ],
         "requestBody": {
           "content": {
@@ -66,7 +66,7 @@ scrapy.net is a simple web scraper api, built on .NET, docker and Selenium.
     "/requestId": {
       "get": {
         "tags": [
-          "Scrapy"
+          "Scrape"
         ],
         "parameters": [
           {
@@ -158,9 +158,33 @@ scrapy.net is a simple web scraper api, built on .NET, docker and Selenium.
           },
           "resourceType": {
             "$ref": "#/components/schemas/ResourceType"
+          },
+          "waitFor": {
+            "$ref": "#/components/schemas/WaitFor"
           }
         },
         "additionalProperties": false
+      },
+      "WaitFor": {
+        "type": "object",
+        "properties": {
+          "waitForType": {
+            "$ref": "#/components/schemas/WaitForType"
+          },
+          "value": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "WaitForType": {
+        "enum": [
+          "ClassName",
+          "Id",
+          "Milliseconds"
+        ],
+        "type": "string"
       }
     }
   }

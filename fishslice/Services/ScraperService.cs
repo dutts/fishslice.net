@@ -7,9 +7,10 @@ using Microsoft.Extensions.Logging;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Remote;
-using scrapy.Queue;
+using OpenQA.Selenium.Support.UI;
+using fishslice.Queue;
 
-namespace scrapy.Services
+namespace fishslice.Services
 {
     public class RequestQueue : ConcurrentReferenceQueue<UriRequestQueueItem> { }
 
@@ -60,6 +61,42 @@ namespace scrapy.Services
                         try
                         {
                             driver.Navigate().GoToUrl(uri);
+
+                            if (uriRequest.WaitFor != null)
+                            {
+                                if (uriRequest.WaitFor.WaitForType == WaitForType.Milliseconds && int.TryParse(uriRequest.WaitFor.Value, out var waitForDelay))
+                                {
+                                    await Task.Delay(waitForDelay, stoppingToken);
+                                }
+                                else
+                                {
+                                    var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+
+                                    wait.Until(webDriver =>
+                                    {
+                                        try
+                                        {
+                                            switch (uriRequest.WaitFor.WaitForType)
+                                            {
+                                                case WaitForType.ClassName:
+                                                    return webDriver.FindElement(By.ClassName(uriRequest.WaitFor.Value)).Displayed;
+                                                case WaitForType.Id:
+                                                    return webDriver.FindElement(By.Id(uriRequest.WaitFor.Value)).Displayed;
+                                                default:
+                                                    return true; //todo: is this the best thing to do here? at least log maybe?
+                                            }
+                                        }
+                                        catch (StaleElementReferenceException)
+                                        {
+                                            return false;
+                                        }
+                                        catch (NoSuchElementException)
+                                        {
+                                            return false;
+                                        }
+                                    });
+                                }
+                            }
 
                             var pageSource = driver.PageSource;
                             _scrapeResultCache.Set(new ScrapeResultCacheKey(uriRequest.RequestId, ResourceType.PageSource), new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, ResourceType.PageSource, pageSource));

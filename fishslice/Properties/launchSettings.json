@@ -17,7 +17,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "scrapy": {
+    "fishslice": {
       "commandName": "Project",
       "dotnetRunMessages": "true",
       "launchBrowser": true,

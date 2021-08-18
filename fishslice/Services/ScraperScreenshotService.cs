@@ -8,9 +8,9 @@ using Microsoft.Extensions.Logging;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Remote;
-using scrapy.Queue;
+using fishslice.Queue;
 
-namespace scrapy.Services
+namespace fishslice.Services
 {
     public class ScreenshotRequestQueue : ConcurrentReferenceQueue<UriRequestQueueItem> { }
 

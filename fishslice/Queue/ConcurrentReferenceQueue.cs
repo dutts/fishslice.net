@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 
-namespace scrapy.Queue
+namespace fishslice.Queue
 {
     public class ConcurrentReferenceQueue<T> : ConcurrentQueue<StrongBox<T>>
     {

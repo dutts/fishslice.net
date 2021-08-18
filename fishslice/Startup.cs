@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 
-namespace scrapy
+namespace fishslice
 {
     public class Startup
     {
@@ -26,7 +26,7 @@ namespace scrapy
                 });
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "scrapy", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "fishslice", Version = "v1" });
             });
         }
 
@@ -36,7 +36,7 @@ namespace scrapy
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "scrapy v1"));
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "fishslice v1"));
             }
 
             app.UseHttpsRedirection();

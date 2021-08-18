@@ -6,7 +6,7 @@
     <ProjectGuid>{55CE8CA6-129C-4152-A5EF-D7FFA7387215}</ProjectGuid>
     <DockerLaunchBrowser>True</DockerLaunchBrowser>
     <DockerServiceUrl>{Scheme}://localhost:{ServicePort}/swagger</DockerServiceUrl>
-    <DockerServiceName>scrapy</DockerServiceName>
+    <DockerServiceName>fishslice</DockerServiceName>
   </PropertyGroup>
   <ItemGroup>
     <None Include="docker-compose.override.yml">

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace scrapy
+namespace fishslice
 {
     public enum ResourceType
     {
@@ -8,13 +8,22 @@ namespace scrapy
         Screenshot
     }
 
-    public record UriRequest(string UriString, ResourceType ResourceType);
+    public enum WaitForType
+    {
+        ClassName,
+        Id,
+        Milliseconds
+    }
+
+    public record WaitFor(WaitForType WaitForType, string Value);
+
+    public record UriRequest(string UriString, ResourceType ResourceType, WaitFor WaitFor = null);
 
     public record UriRequestResponse(Guid RequestId);
 
     public record ScrapeResultCacheKey(Guid RequestId, ResourceType ResourceType);
 
-    public record UriRequestQueueItem(Guid RequestId, string UriString);
+    public record UriRequestQueueItem(Guid RequestId, string UriString, WaitFor WaitFor);
 
     public enum ScrapeResult
     {

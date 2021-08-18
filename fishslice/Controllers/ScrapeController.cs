@@ -3,20 +3,20 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using scrapy.Services;
+using fishslice.Services;
 
-namespace scrapy.Controllers
+namespace fishslice.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class ScrapyController : ControllerBase
+    public class ScrapeController : ControllerBase
     {
         private readonly RequestQueue _requestQueue;
         private readonly ScreenshotRequestQueue _screenshotRequestQueue;
         private readonly MemoryCache _scrapeResultCache;
-        private readonly ILogger<ScrapyController> _logger;
+        private readonly ILogger<ScrapeController> _logger;
 
-        public ScrapyController(RequestQueue requestQueue, ScreenshotRequestQueue screenshotRequestQueue, MemoryCache scrapeResultCache, ILogger<ScrapyController> logger)
+        public ScrapeController(RequestQueue requestQueue, ScreenshotRequestQueue screenshotRequestQueue, MemoryCache scrapeResultCache, ILogger<ScrapeController> logger)
         {
             _requestQueue = requestQueue;
             _screenshotRequestQueue = screenshotRequestQueue;
@@ -38,10 +38,10 @@ namespace scrapy.Controllers
             switch (request.ResourceType)
             {
                 case ResourceType.PageSource:
-                    _requestQueue.Enqueue(new UriRequestQueueItem(requestId, request.UriString));
+                    _requestQueue.Enqueue(new UriRequestQueueItem(requestId, request.UriString, request.WaitFor));
                     break;
                 case ResourceType.Screenshot:
-                    _screenshotRequestQueue.Enqueue(new UriRequestQueueItem(requestId, request.UriString));
+                    _screenshotRequestQueue.Enqueue(new UriRequestQueueItem(requestId, request.UriString, request.WaitFor));
                     break;
             }
             

@@ -16,6 +16,7 @@
     <None Remove="Selenium.WebDriver" />
     <None Remove="Queue\" />
     <None Remove="Noksa.WebDriver.ScreenshotsExtensions" />
+    <None Remove="GitVersion.MsBuild" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Services\" />
