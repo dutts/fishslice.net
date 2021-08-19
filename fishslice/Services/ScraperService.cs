@@ -103,7 +103,7 @@ namespace fishslice.Services
                                 case ResourceType.PageSource:
                                     _logger.LogInformation($"Handling page source request for '{uri}'");
                                     var pageSource = driver.PageSource;
-                                    _scrapeResultCache.Set(new ScrapeResultCacheKey(uriRequest.RequestId, ResourceType.PageSource), new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, ResourceType.PageSource, pageSource));
+                                    _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, pageSource));
                                     break;
                                 case ResourceType.Screenshot:
                                     _logger.LogInformation($"Handling screenshot request for '{uri}'");
@@ -116,14 +116,14 @@ namespace fishslice.Services
                                     var screenshotString = driver.GetScreenshot().AsBase64EncodedString;
                                     _logger.LogInformation($"End screenshotting '{uri}'");
 
-                                    _scrapeResultCache.Set(new ScrapeResultCacheKey(uriRequest.RequestId, ResourceType.Screenshot), new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, ResourceType.Screenshot, screenshotString));
+                                    _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, screenshotString));
                                     break;
                             }
                         }
                         catch (WebDriverException e)
                         {
                             _logger.LogError($"Exception occurred in WebDriver, '{e}");
-                            _scrapeResultCache.Set(new ScrapeResultCacheKey(uriRequest.RequestId, ResourceType.PageSource), new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Error, ResourceType.PageSource, e.ToString()));
+                            _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Error, e.ToString()));
                             resetWebDriver = true;
                         }
                     }

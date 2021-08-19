@@ -41,12 +41,11 @@ namespace fishslice.Controllers
         [HttpGet("/requestId")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult Get(Guid requestId, ResourceType resourceType)
+        public IActionResult Get(Guid requestId)
         {
-            _logger.LogInformation($"Handling GET request, received request for '{resourceType}' with request id '{requestId}'");
+            _logger.LogInformation($"Handling GET request, received request for request id '{requestId}'");
 
-            var lookup = new ScrapeResultCacheKey(requestId, resourceType);
-            if (_scrapeResultCache.TryGetValue(lookup, out UriScrapeResponse response))
+            if (_scrapeResultCache.TryGetValue(requestId, out UriScrapeResponse response))
             {
                 return Ok(response);
             }

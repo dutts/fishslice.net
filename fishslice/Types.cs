@@ -21,8 +21,6 @@ namespace fishslice
 
     public record UriRequestResponse(Guid RequestId);
 
-    public record ScrapeResultCacheKey(Guid RequestId, ResourceType ResourceType);
-
     public record UriRequestQueueItem(Guid RequestId, ResourceType ResourceType, string UriString, WaitFor WaitFor);
 
     public enum ScrapeResult
@@ -31,5 +29,5 @@ namespace fishslice
         Error
     }
 
-    public record UriScrapeResponse(Guid RequestId, ScrapeResult ScrapeResult, ResourceType ResultType, string ResultString);
+    public record UriScrapeResponse(Guid RequestId, ScrapeResult ScrapeResult, string ResultString);
 }
