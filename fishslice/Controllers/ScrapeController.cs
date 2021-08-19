@@ -12,14 +12,12 @@ namespace fishslice.Controllers
     public class ScrapeController : ControllerBase
     {
         private readonly RequestQueue _requestQueue;
-        private readonly ScreenshotRequestQueue _screenshotRequestQueue;
         private readonly MemoryCache _scrapeResultCache;
         private readonly ILogger<ScrapeController> _logger;
 
-        public ScrapeController(RequestQueue requestQueue, ScreenshotRequestQueue screenshotRequestQueue, MemoryCache scrapeResultCache, ILogger<ScrapeController> logger)
+        public ScrapeController(RequestQueue requestQueue, MemoryCache scrapeResultCache, ILogger<ScrapeController> logger)
         {
             _requestQueue = requestQueue;
-            _screenshotRequestQueue = screenshotRequestQueue;
             _scrapeResultCache = scrapeResultCache;
             _logger = logger;
         }
@@ -35,15 +33,7 @@ namespace fishslice.Controllers
 
             _logger.LogInformation($"Enqueuing request for '{request.ResourceType}' of '{request.UriString}' with request id '{requestId}'");
 
-            switch (request.ResourceType)
-            {
-                case ResourceType.PageSource:
-                    _requestQueue.Enqueue(new UriRequestQueueItem(requestId, request.UriString, request.WaitFor));
-                    break;
-                case ResourceType.Screenshot:
-                    _screenshotRequestQueue.Enqueue(new UriRequestQueueItem(requestId, request.UriString, request.WaitFor));
-                    break;
-            }
+            _requestQueue.Enqueue(new UriRequestQueueItem(requestId, request.ResourceType, request.UriString, request.WaitFor));
             
             return Ok(new UriRequestResponse(requestId));
         }

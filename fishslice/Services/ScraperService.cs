@@ -56,7 +56,7 @@ namespace fishslice.Services
                     {
                         var uri = uriRequest.UriString;
 
-                        _logger.LogInformation($"Dequeued page source request for '{uri}'");
+                        _logger.LogInformation($"Dequeued request for '{uri}'");
 
                         try
                         {
@@ -98,8 +98,27 @@ namespace fishslice.Services
                                 }
                             }
 
-                            var pageSource = driver.PageSource;
-                            _scrapeResultCache.Set(new ScrapeResultCacheKey(uriRequest.RequestId, ResourceType.PageSource), new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, ResourceType.PageSource, pageSource));
+                            switch (uriRequest.ResourceType)
+                            {
+                                case ResourceType.PageSource:
+                                    _logger.LogInformation($"Handling page source request for '{uri}'");
+                                    var pageSource = driver.PageSource;
+                                    _scrapeResultCache.Set(new ScrapeResultCacheKey(uriRequest.RequestId, ResourceType.PageSource), new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, ResourceType.PageSource, pageSource));
+                                    break;
+                                case ResourceType.Screenshot:
+                                    _logger.LogInformation($"Handling screenshot request for '{uri}'");
+                                    await Task.Delay(1000, stoppingToken);
+
+                                    _logger.LogInformation($"Begin screenshotting '{uri}'");
+                                    var totalWidth = (int)(long)((IJavaScriptExecutor)driver).ExecuteScript("return document.body.offsetWidth");
+                                    var totalHeight = (int)(long)((IJavaScriptExecutor)driver).ExecuteScript("return document.body.parentNode.scrollHeight");
+                                    driver.Manage().Window.Size = new System.Drawing.Size(totalWidth, totalHeight);
+                                    var screenshotString = driver.GetScreenshot().AsBase64EncodedString;
+                                    _logger.LogInformation($"End screenshotting '{uri}'");
+
+                                    _scrapeResultCache.Set(new ScrapeResultCacheKey(uriRequest.RequestId, ResourceType.Screenshot), new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, ResourceType.Screenshot, screenshotString));
+                                    break;
+                            }
                         }
                         catch (WebDriverException e)
                         {
