@@ -35,99 +35,106 @@ namespace fishslice.Services
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                var options = new ChromeOptions();
-
-                _logger.LogInformation("Creating WebDriver instance");
-                options.AddArgument("start-maximized"); // https://stackoverflow.com/a/26283818/1689770
-                options.AddArgument("enable-automation"); // https://stackoverflow.com/a/43840128/1689770
-                options.AddArgument("--headless"); // only if you are ACTUALLY running headless
-                options.AddArgument("--no-sandbox"); //https://stackoverflow.com/a/50725918/1689770
-                options.AddArgument("--disable-infobars"); //https://stackoverflow.com/a/43840128/1689770
-                options.AddArgument("--disable-dev-shm-usage"); //https://stackoverflow.com/a/50725918/1689770
-                options.AddArgument("--disable-browser-side-navigation"); //https://stackoverflow.com/a/49123152/1689770
-                options.AddArgument("--disable-gpu"); //https://stackoverflow.com/questions/51959986/how-to-solve-selenium-chromedriver-timed-out-receiving-message-from-renderer-exc
-
-                using var driver = new RemoteWebDriver(new Uri("http://selenium.chrome:4444/wd/hub"), options);
-                resetWebDriver = false;
-
-                while (!resetWebDriver)
+                try
                 {
-                    if (_requestQueue.TryDequeue(out UriRequestQueueItem uriRequest))
+                    var options = new ChromeOptions();
+
+                    _logger.LogInformation("Creating WebDriver instance");
+                    options.AddArgument("start-maximized"); // https://stackoverflow.com/a/26283818/1689770
+                    options.AddArgument("enable-automation"); // https://stackoverflow.com/a/43840128/1689770
+                    options.AddArgument("--headless"); // only if you are ACTUALLY running headless
+                    options.AddArgument("--no-sandbox"); //https://stackoverflow.com/a/50725918/1689770
+                    options.AddArgument("--disable-infobars"); //https://stackoverflow.com/a/43840128/1689770
+                    options.AddArgument("--disable-dev-shm-usage"); //https://stackoverflow.com/a/50725918/1689770
+                    options.AddArgument("--disable-browser-side-navigation"); //https://stackoverflow.com/a/49123152/1689770
+                    options.AddArgument("--disable-gpu"); //https://stackoverflow.com/questions/51959986/how-to-solve-selenium-chromedriver-timed-out-receiving-message-from-renderer-exc
+
+                    using var driver = new RemoteWebDriver(new Uri("http://selenium.chrome:4444/wd/hub"), options);
+                    resetWebDriver = false;
+
+                    while (!resetWebDriver)
                     {
-                        var uri = uriRequest.UriString;
-
-                        _logger.LogInformation($"Dequeued request for '{uri}'");
-
-                        try
+                        if (_requestQueue.TryDequeue(out UriRequestQueueItem uriRequest))
                         {
-                            driver.Navigate().GoToUrl(uri);
+                            var uri = uriRequest.UriString;
 
-                            if (uriRequest.WaitFor != null)
+                            _logger.LogInformation($"Dequeued request for '{uri}'");
+
+                            try
                             {
-                                if (uriRequest.WaitFor.WaitForType == WaitForType.Milliseconds && int.TryParse(uriRequest.WaitFor.Value, out var waitForDelay))
-                                {
-                                    await Task.Delay(waitForDelay, stoppingToken);
-                                }
-                                else
-                                {
-                                    var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+                                driver.Navigate().GoToUrl(uri);
 
-                                    wait.Until(webDriver =>
+                                if (uriRequest.WaitFor != null)
+                                {
+                                    if (uriRequest.WaitFor.WaitForType == WaitForType.Milliseconds && int.TryParse(uriRequest.WaitFor.Value, out var waitForDelay))
                                     {
-                                        try
+                                        await Task.Delay(waitForDelay, stoppingToken);
+                                    }
+                                    else
+                                    {
+                                        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+
+                                        wait.Until(webDriver =>
                                         {
-                                            switch (uriRequest.WaitFor.WaitForType)
+                                            try
                                             {
-                                                case WaitForType.ClassName:
-                                                    return webDriver.FindElement(By.ClassName(uriRequest.WaitFor.Value)).Displayed;
-                                                case WaitForType.Id:
-                                                    return webDriver.FindElement(By.Id(uriRequest.WaitFor.Value)).Displayed;
-                                                default:
-                                                    return true; //todo: is this the best thing to do here? at least log maybe?
+                                                switch (uriRequest.WaitFor.WaitForType)
+                                                {
+                                                    case WaitForType.ClassName:
+                                                        return webDriver.FindElement(By.ClassName(uriRequest.WaitFor.Value)).Displayed;
+                                                    case WaitForType.Id:
+                                                        return webDriver.FindElement(By.Id(uriRequest.WaitFor.Value)).Displayed;
+                                                    default:
+                                                        return true; //todo: is this the best thing to do here? at least log maybe?
                                             }
-                                        }
-                                        catch (StaleElementReferenceException)
-                                        {
-                                            return false;
-                                        }
-                                        catch (NoSuchElementException)
-                                        {
-                                            return false;
-                                        }
-                                    });
+                                            }
+                                            catch (StaleElementReferenceException)
+                                            {
+                                                return false;
+                                            }
+                                            catch (NoSuchElementException)
+                                            {
+                                                return false;
+                                            }
+                                        });
+                                    }
+                                }
+
+                                switch (uriRequest.ResourceType)
+                                {
+                                    case ResourceType.PageSource:
+                                        _logger.LogInformation($"Handling page source request for '{uri}'");
+                                        var pageSource = driver.PageSource;
+                                        _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, pageSource));
+                                        break;
+                                    case ResourceType.Screenshot:
+                                        _logger.LogInformation($"Handling screenshot request for '{uri}'");
+                                        await Task.Delay(1000, stoppingToken);
+
+                                        _logger.LogInformation($"Begin screenshotting '{uri}'");
+                                        var totalWidth = (int)(long)((IJavaScriptExecutor)driver).ExecuteScript("return document.body.offsetWidth");
+                                        var totalHeight = (int)(long)((IJavaScriptExecutor)driver).ExecuteScript("return document.body.parentNode.scrollHeight");
+                                        driver.Manage().Window.Size = new System.Drawing.Size(totalWidth, totalHeight);
+                                        var screenshotString = driver.GetScreenshot().AsBase64EncodedString;
+                                        _logger.LogInformation($"End screenshotting '{uri}'");
+
+                                        _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, screenshotString));
+                                        break;
                                 }
                             }
-
-                            switch (uriRequest.ResourceType)
+                            catch (WebDriverException e)
                             {
-                                case ResourceType.PageSource:
-                                    _logger.LogInformation($"Handling page source request for '{uri}'");
-                                    var pageSource = driver.PageSource;
-                                    _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, pageSource));
-                                    break;
-                                case ResourceType.Screenshot:
-                                    _logger.LogInformation($"Handling screenshot request for '{uri}'");
-                                    await Task.Delay(1000, stoppingToken);
-
-                                    _logger.LogInformation($"Begin screenshotting '{uri}'");
-                                    var totalWidth = (int)(long)((IJavaScriptExecutor)driver).ExecuteScript("return document.body.offsetWidth");
-                                    var totalHeight = (int)(long)((IJavaScriptExecutor)driver).ExecuteScript("return document.body.parentNode.scrollHeight");
-                                    driver.Manage().Window.Size = new System.Drawing.Size(totalWidth, totalHeight);
-                                    var screenshotString = driver.GetScreenshot().AsBase64EncodedString;
-                                    _logger.LogInformation($"End screenshotting '{uri}'");
-
-                                    _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Ok, screenshotString));
-                                    break;
+                                _logger.LogError($"Exception occurred in WebDriver, '{e}");
+                                _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Error, e.ToString()));
+                                resetWebDriver = true;
                             }
                         }
-                        catch (WebDriverException e)
-                        {
-                            _logger.LogError($"Exception occurred in WebDriver, '{e}");
-                            _scrapeResultCache.Set(uriRequest.RequestId, new UriScrapeResponse(uriRequest.RequestId, ScrapeResult.Error, e.ToString()));
-                            resetWebDriver = true;
-                        }
+                        await Task.Delay(1000, stoppingToken);
                     }
-                    await Task.Delay(1000, stoppingToken);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "Error occured starting webdriver");
                 }
             }
         }
