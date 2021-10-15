@@ -2,24 +2,20 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <DockerComposeProjectPath>../docker-compose.dcproj</DockerComposeProjectPath>
     <UserSecretsId>0cfe664d-503c-48fa-b35e-6250b3f1d8f7</UserSecretsId>
+    <DockerComposeProjectPath>../docker-compose.dcproj</DockerComposeProjectPath>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+    <PackageReference Include="Serilog.Sinks.File.Archive" Version="1.0.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.2" />
-    <PackageReference Include="Selenium.WebDriver" Version="3.141.0" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Services\" />
-    <None Remove="Selenium.WebDriver" />
-    <None Remove="Queue\" />
-    <None Remove="Noksa.WebDriver.ScreenshotsExtensions" />
-    <None Remove="GitVersion.MsBuild" />
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="Services\" />
-    <Folder Include="Queue\" />
+    <Folder Include="Converters\" />
   </ItemGroup>
 </Project>

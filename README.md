@@ -12,7 +12,7 @@ fishslice is a simple web scraper api, built on .NET, docker and Selenium.
     "version": "v1"
   },
   "paths": {
-    "/requestUri": {
+    "/requestUrl": {
       "post": {
         "tags": [
           "Scrape"
@@ -21,88 +21,32 @@ fishslice is a simple web scraper api, built on .NET, docker and Selenium.
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UriRequest"
+                "$ref": "#/components/schemas/UrlRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/UriRequest"
+                "$ref": "#/components/schemas/UrlRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/UriRequest"
+                "$ref": "#/components/schemas/UrlRequest"
               }
             }
           }
         },
         "responses": {
-          "202": {
+          "200": {
+            "description": "Success"
+          },
+          "204": {
             "description": "Success"
           },
           "400": {
             "description": "Bad Request",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/requestId": {
-      "get": {
-        "tags": [
-          "Scrape"
-        ],
-        "parameters": [
-          {
-            "name": "requestId",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "resourceType",
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/ResourceType"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
                 }
@@ -115,6 +59,24 @@ fishslice is a simple web scraper api, built on .NET, docker and Selenium.
   },
   "components": {
     "schemas": {
+      "PreScrapeAction": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/PreScrapeActionType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PreScrapeActionType": {
+        "enum": [
+          "WaitForElement",
+          "Sleep",
+          "SetInputElement",
+          "ClickButton"
+        ],
+        "type": "string"
+      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -149,42 +111,26 @@ fishslice is a simple web scraper api, built on .NET, docker and Selenium.
         ],
         "type": "string"
       },
-      "UriRequest": {
+      "UrlRequest": {
         "type": "object",
         "properties": {
-          "uriString": {
+          "url": {
             "type": "string",
+            "format": "uri",
             "nullable": true
           },
           "resourceType": {
             "$ref": "#/components/schemas/ResourceType"
           },
-          "waitFor": {
-            "$ref": "#/components/schemas/WaitFor"
-          }
-        },
-        "additionalProperties": false
-      },
-      "WaitFor": {
-        "type": "object",
-        "properties": {
-          "waitForType": {
-            "$ref": "#/components/schemas/WaitForType"
-          },
-          "value": {
-            "type": "string",
+          "preScrapeActions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreScrapeAction"
+            },
             "nullable": true
           }
         },
         "additionalProperties": false
-      },
-      "WaitForType": {
-        "enum": [
-          "ClassName",
-          "Id",
-          "Milliseconds"
-        ],
-        "type": "string"
       }
     }
   }

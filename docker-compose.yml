@@ -1,18 +1,40 @@
 ﻿version: '3.4'
 
 services:
+  
+  selenium-hub:
+    image: selenium/hub:3.141.59
+    container_name: selenium-hub
 
-  selenium.chrome:
-    image: selenium/standalone-chrome:3.141.59
-    container_name: selenium.chrome
-
+  selenium-node-chrome:
+      image: selenium/node-chrome:3.141.59
+      depends_on:
+        - selenium-hub
+      deploy:
+        resources:
+          limits:
+            cpus: "1"
+            memory: "512M"
+      environment:
+        - HUB_HOST=selenium-hub
+        - HUB_PORT=4444
+        - NODE_MAX_INSTANCES=5
+        - NODE_MAX_SESSION=5
+  
   fishslice:
     image: ${DOCKER_REGISTRY-}fishslice
     build:
       context: .
       dockerfile: fishslice/Dockerfile
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+    volumes:
+      #- /home/docker-user/fishslice/logs:/app/logs
+      - /Users/rdutton/Documents/github/fishslice/logs:/app/logs
     depends_on:
-      - selenium.chrome
+      - selenium-hub
     ports:
       - 8888:80
       - 8443:443

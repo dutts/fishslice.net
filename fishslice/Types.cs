@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using System.Transactions;
+using fishslice.Converters;
 
 namespace fishslice
 {
@@ -7,22 +11,22 @@ namespace fishslice
         PageSource,
         Screenshot
     }
-
-    public enum WaitForType
+    
+    public enum PreScrapeActionType
     {
-        ClassName,
-        Id,
-        Milliseconds
+        WaitForElement,
+        Sleep,
+        SetInputElement,
+        ClickButton
     }
-
-    public record WaitFor(WaitForType WaitForType, string Value);
-
-    public record UriRequest(string UriString, ResourceType ResourceType, WaitFor WaitFor = null);
-
-    public record UriRequestResponse(Guid RequestId);
-
-    public record UriRequestQueueItem(Guid RequestId, ResourceType ResourceType, string UriString, WaitFor WaitFor);
-
+    
+    public abstract record PreScrapeAction(PreScrapeActionType Type);
+    public record WaitForElement(string SelectorXPath) : PreScrapeAction(PreScrapeActionType.WaitForElement);
+    public record Sleep(int Milliseconds) : PreScrapeAction(PreScrapeActionType.Sleep);
+    public record SetInputElement(string SelectorXPath, string Value) : PreScrapeAction(PreScrapeActionType.SetInputElement);
+    public record ClickButton(string SelectorXPath) : PreScrapeAction(PreScrapeActionType.ClickButton);
+    public record UrlRequest(Uri Url, ResourceType ResourceType, List<PreScrapeAction> PreScrapeActions);
+    
     public enum ScrapeResult
     {
         Ok,
