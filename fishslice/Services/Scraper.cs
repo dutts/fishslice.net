@@ -80,28 +80,39 @@ namespace fishslice.Services
                         HandleWaitForElement((WaitForElement)currentAction, requestId, cancellationToken);
                         break;
                     case PreScrapeActionType.SetInputElement:
-                        HandleSetInputElement((SetInputElement)currentAction, requestId);
+                        HandleSetInputElement((SetInputElement)currentAction, requestId, cancellationToken);
                         break;
                     case PreScrapeActionType.ClickButton:
-                        HandleClickButton((ClickButton)currentAction, requestId);
+                        HandleClickButton((ClickButton)currentAction, requestId, cancellationToken);
                         break;
                 }
             }
             //throw new NotImplementedException();
         }
 
-        private void HandleClickButton(ClickButton currentAction, Guid requestId)
+        private void HandleClickButton(ClickButton currentAction, Guid requestId, CancellationToken cancellationToken)
         {
             _logger.LogInformation(
                 $"{requestId} : Handling an ClickButton action");
+            
+            if (currentAction.WaitForMilliseconds > 0)
+            {
+                HandleWaitForElement(new WaitForElement(currentAction.SelectorXPath, currentAction.WaitForMilliseconds), requestId, cancellationToken);
+            }
+            
             var button = _webDriver.FindElement(By.XPath(currentAction.SelectorXPath));
             button.Click();
         }
 
-        private void HandleSetInputElement(SetInputElement currentAction, Guid requestId)
+        private void HandleSetInputElement(SetInputElement currentAction, Guid requestId, CancellationToken cancellationToken)
         {
             _logger.LogInformation(
                 $"{requestId} : Handling an SetInput action");
+
+            if (currentAction.WaitForMilliseconds > 0)
+            {
+                HandleWaitForElement(new WaitForElement(currentAction.SelectorXPath, currentAction.WaitForMilliseconds), requestId, cancellationToken);
+            }
             
             var inputElement = _webDriver.FindElement(By.XPath(currentAction.SelectorXPath));
             inputElement.SendKeys(currentAction.Value);
@@ -110,8 +121,8 @@ namespace fishslice.Services
         private void HandleWaitForElement(WaitForElement waitForElementAction, Guid requestId, CancellationToken cancellationToken)
         {
             _logger.LogInformation(
-                $"{requestId} : Handling a WaitFor action");
-            var wait = new WebDriverWait(_webDriver, TimeSpan.FromSeconds(10));
+                $"{requestId} : Handling a WaitFor action for {waitForElementAction.WaitForMilliseconds}ms");
+            var wait = new WebDriverWait(_webDriver, TimeSpan.FromMilliseconds(waitForElementAction.WaitForMilliseconds));
             wait.Until(webDriver =>
             {
                 if (cancellationToken.IsCancellationRequested) return true;

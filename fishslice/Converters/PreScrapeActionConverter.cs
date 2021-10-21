@@ -42,7 +42,21 @@ namespace fishslice.Converters
 
         public override void Write(Utf8JsonWriter writer, PreScrapeAction value, JsonSerializerOptions options)
         {
-            throw new NotImplementedException();
+            switch (value.Type)
+            {
+                case PreScrapeActionType.Sleep:
+                    JsonSerializer.Serialize(writer, (Sleep)value, typeof(Sleep), options);
+                    break;
+                case PreScrapeActionType.WaitForElement:
+                    JsonSerializer.Serialize(writer, (WaitForElement)value, typeof(WaitForElement), options);
+                    break;
+                case PreScrapeActionType.SetInputElement:
+                    JsonSerializer.Serialize(writer, (SetInputElement)value, typeof(SetInputElement), options);
+                    break;
+                case PreScrapeActionType.ClickButton:
+                    JsonSerializer.Serialize(writer, (ClickButton)value, typeof(ClickButton), options);
+                    break;
+            }
         }
     }
 }

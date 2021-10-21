@@ -21,10 +21,10 @@ namespace fishslice
     }
     
     public abstract record PreScrapeAction(PreScrapeActionType Type);
-    public record WaitForElement(string SelectorXPath) : PreScrapeAction(PreScrapeActionType.WaitForElement);
+    public record WaitForElement(string SelectorXPath, int WaitForMilliseconds = 0) : PreScrapeAction(PreScrapeActionType.WaitForElement);
     public record Sleep(int Milliseconds) : PreScrapeAction(PreScrapeActionType.Sleep);
-    public record SetInputElement(string SelectorXPath, string Value) : PreScrapeAction(PreScrapeActionType.SetInputElement);
-    public record ClickButton(string SelectorXPath) : PreScrapeAction(PreScrapeActionType.ClickButton);
+    public record SetInputElement(string SelectorXPath, string Value, int WaitForMilliseconds = 0) : PreScrapeAction(PreScrapeActionType.SetInputElement);
+    public record ClickButton(string SelectorXPath, int WaitForMilliseconds = 0) : PreScrapeAction(PreScrapeActionType.ClickButton);
     public record UrlRequest(Uri Url, ResourceType ResourceType, List<PreScrapeAction> PreScrapeActions);
     
     public enum ScrapeResult

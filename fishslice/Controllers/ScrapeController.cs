@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using fishslice.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Swashbuckle.AspNetCore.Filters;
 
 namespace fishslice.Controllers
 {
@@ -29,6 +31,7 @@ namespace fishslice.Controllers
         /// <response code="204">If the scraper was unable to acquire any content from the Url</response>
         /// <response code="400">Url is not absolute</response>
         [HttpPost("/requestUrl")]
+        [SwaggerRequestExample(typeof(UrlRequest), typeof(UrlRequestExample))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -67,6 +70,21 @@ namespace fishslice.Controllers
                 _logger.LogInformation($"{requestId} : Scrape OK, returning 200");
                 return Ok(response.Result);
             }
+        }
+    }
+
+    public class UrlRequestExample : IExamplesProvider<UrlRequest>
+    {
+        public UrlRequest GetExamples()
+        {
+            return new UrlRequest(new Uri("https://duckduckgo.com"), ResourceType.PageSource,
+                new List<PreScrapeAction>()
+                {
+                    new Sleep(1000),
+                    new SetInputElement("//*[@id=\"search_form_input_homepage\"]", "Awesome people named Richard", 10000),
+                    new WaitForElement("//*[@id=\"search_button_homepage\"]"),
+                    new ClickButton("//*[@id=\"search_button_homepage\"]")
+                });
         }
     }
 }

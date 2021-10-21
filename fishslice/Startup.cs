@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using fishslice.Converters;
 using Microsoft.AspNetCore.Builder;
@@ -7,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using Swashbuckle.AspNetCore.Filters;
 
 namespace fishslice
 {
@@ -24,13 +27,16 @@ namespace fishslice
             services.AddControllers()
                 .AddJsonOptions(options =>
                 {
+                    options.JsonSerializerOptions.PropertyNamingPolicy = null;
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                     options.JsonSerializerOptions.Converters.Add(new PreScrapeActionConverter());
                 });
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "fishslice", Version = "v1" });
+                c.ExampleFilters();
             });
+            services.AddSwaggerExamplesFromAssemblies(Assembly.GetEntryAssembly());
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
