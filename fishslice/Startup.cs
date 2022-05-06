@@ -1,13 +1,10 @@
-﻿using System;
-using System.Reflection;
-using System.Runtime.CompilerServices;
+﻿using System.Reflection;
 using System.Text.Json.Serialization;
 using fishslice.Converters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.OpenApi.Models;
 using Serilog;
 using Swashbuckle.AspNetCore.Filters;
 
@@ -33,7 +30,6 @@ namespace fishslice
                 });
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "fishslice", Version = "v1" });
                 c.ExampleFilters();
             });
             services.AddSwaggerExamplesFromAssemblies(Assembly.GetEntryAssembly());
@@ -52,7 +48,6 @@ namespace fishslice
                 c.RoutePrefix = string.Empty;
             });
             
-            //app.UseHttpsRedirection(); // todo: cannot redirect until we have sorted HTTPS
             app.UseRouting();
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>

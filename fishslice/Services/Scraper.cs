@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using AngleSharp.Html;
+using AngleSharp.Html.Parser;
 using Microsoft.Extensions.Logging;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
@@ -37,22 +40,33 @@ namespace fishslice.Services
                 switch (urlRequest.ResourceType)
                 {
                     case ResourceType.PageSource:
+                    {
                         _logger.LogInformation($"{requestId} : Handling page source request for '{url}'");
-                        var pageSource = _webDriver.PageSource;
+                        var rawPageSource = _webDriver.PageSource;
+                        var pageSource = rawPageSource;
+                        try
+                        {
+                            var htmlParser = new HtmlParser();
+                            using var document = await htmlParser.ParseDocumentAsync(rawPageSource);
+                            await using var sw = new StringWriter();
+                            document.ToHtml(sw, new PrettyMarkupFormatter());
+                            pageSource = sw.ToString();
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.LogError(e, $"{requestId} : Exception while trying to pretty print page source, reverting to raw");
+                        }
                         return new UriScrapeResponse(requestId, ScrapeResult.Ok, pageSource);
+                    }
                     case ResourceType.Screenshot:
+                    {
                         _logger.LogInformation($"{requestId} : Handling screenshot request for '{url}'");
                         await Task.Delay(1000, cancellationToken);
                         _logger.LogInformation($"{requestId} : Begin screenshotting '{url}'");
-                        var totalWidth =
-                            (int)(long)((IJavaScriptExecutor)_webDriver).ExecuteScript("return document.body.offsetWidth");
-                        var totalHeight =
-                            (int)(long)((IJavaScriptExecutor)_webDriver).ExecuteScript(
-                                "return document.body.parentNode.scrollHeight");
-                        _webDriver.Manage().Window.Size = new System.Drawing.Size(totalWidth, totalHeight);
                         var screenshotString = ((ITakesScreenshot)_webDriver).GetScreenshot().AsBase64EncodedString;
                         _logger.LogInformation($"{requestId} : End screenshotting '{url}'");
                         return new UriScrapeResponse(requestId, ScrapeResult.Ok, screenshotString);
+                    }
                 }
             }
             catch (Exception e)
@@ -84,6 +98,12 @@ namespace fishslice.Services
                         break;
                     case PreScrapeActionType.ClickButton:
                         HandleClickButton((ClickButton)currentAction, requestId, cancellationToken);
+                        break;
+                    case PreScrapeActionType.SetBrowserSize:
+                        HandleSetBrowserSize((SetBrowserSize)currentAction, requestId, cancellationToken);
+                        break;
+                    case PreScrapeActionType.NavigateTo:
+                        HandleNavigateTo((NavigateTo)currentAction, requestId, cancellationToken);
                         break;
                 }
             }
@@ -147,6 +167,25 @@ namespace fishslice.Services
         {
             _logger.LogInformation($"{requestId} : Delaying for {sleepAction.Milliseconds}ms");
             await Task.Delay(sleepAction.Milliseconds, cancellationToken);
+        }
+        
+        private void HandleSetBrowserSize(SetBrowserSize currentAction, Guid requestId, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation($"{requestId} : Handling SetBrowserSize action");
+
+            SetBrowserWindowSize(requestId, currentAction.Width, currentAction.Height);
+        }
+        
+        private void SetBrowserWindowSize(Guid requestId, int width, int height)
+        {
+            _logger.LogInformation($"{requestId} : Setting browser size to {width} W x {height} H");
+            _webDriver.Manage().Window.Size = new System.Drawing.Size(width, height);
+        }
+        
+        private void HandleNavigateTo(NavigateTo currentAction, Guid requestId, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation($"{requestId} : Navigating to {currentAction.Url}");
+            _webDriver.Navigate().GoToUrl(currentAction.Url);
         }
         
         public void Dispose()

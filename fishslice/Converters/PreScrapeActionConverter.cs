@@ -28,6 +28,10 @@ namespace fishslice.Converters
                                 return JsonSerializer.Deserialize<SetInputElement>(doc.RootElement.GetRawText(), options);
                             case PreScrapeActionType.ClickButton:
                                 return JsonSerializer.Deserialize<ClickButton>(doc.RootElement.GetRawText(), options);
+                            case PreScrapeActionType.SetBrowserSize:
+                                return JsonSerializer.Deserialize<SetBrowserSize>(doc.RootElement.GetRawText(), options);
+                            case PreScrapeActionType.NavigateTo:
+                                return JsonSerializer.Deserialize<NavigateTo>(doc.RootElement.GetRawText(), options);
                         }
                     }
                 }

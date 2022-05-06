@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using fishslice.Services;
 using Microsoft.AspNetCore.Http;
@@ -69,6 +70,55 @@ namespace fishslice.Controllers
             {
                 _logger.LogInformation($"{requestId} : Scrape OK, returning 200");
                 return Ok(response.Result);
+            }
+        }
+        
+        
+        /// <summary>
+        /// Requests a screenshot from the scraper, returned as an image.png so displays in swagger UI
+        /// </summary>
+        [HttpPost("/requestScreenshotAsImage")]
+        [SwaggerRequestExample(typeof(UrlRequest), typeof(UrlRequestExample))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [Produces("image/png")]
+        public IActionResult PostRequestScreenshotAsImage(UrlRequest request)
+        {
+            var requestId = Guid.NewGuid();
+
+            // Selenium insists on full absolute URLs so ensure we have been given one, as the json deserialiser doesn't spot this
+            try
+            {
+                var _ = request.Url.AbsoluteUri;
+            }
+            catch (Exception)
+            {
+                _logger.LogError($"{requestId} : Invalid uri string received - '{request.Url}'");
+                return BadRequest("Invalid uri string, needs to be a full absolute uri, e.g. 'http://www.google.com'");
+            }
+
+            _logger.LogInformation($"{requestId} : Received request for '{request.ResourceType}' of '{request.Url}'");
+
+            using var scraper = new Scraper(_logger, _remoteWebDriverFactory);
+            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+
+            var cancellationToken = cancellationTokenSource.Token;
+
+            // Force the request to screenshot so we can just paste in what we're currently developing
+            var response = scraper.Scrape(requestId, request with { ResourceType = ResourceType.Screenshot }, cancellationToken);
+
+            if (response.Result == null)
+            {
+                _logger.LogInformation($"{requestId} : Error, returning 204");
+                return new NoContentResult();
+            }
+            else
+            {
+                _logger.LogInformation($"{requestId} : Scrape OK, returning image");
+                var tmpFile = Path.GetTempFileName();
+                System.IO.File.WriteAllBytes(tmpFile, Convert.FromBase64String(response.Result.ResultString));
+                return PhysicalFile(tmpFile, "image/png");
             }
         }
     }

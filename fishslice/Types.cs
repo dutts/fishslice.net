@@ -17,7 +17,9 @@ namespace fishslice
         WaitForElement,
         Sleep,
         SetInputElement,
-        ClickButton
+        ClickButton,
+        SetBrowserSize,
+        NavigateTo
     }
     
     public abstract record PreScrapeAction(PreScrapeActionType Type);
@@ -25,6 +27,8 @@ namespace fishslice
     public record Sleep(int Milliseconds) : PreScrapeAction(PreScrapeActionType.Sleep);
     public record SetInputElement(string SelectorXPath, string Value, int WaitForMilliseconds = 0) : PreScrapeAction(PreScrapeActionType.SetInputElement);
     public record ClickButton(string SelectorXPath, int WaitForMilliseconds = 0) : PreScrapeAction(PreScrapeActionType.ClickButton);
+    public record SetBrowserSize(int Width, int Height) : PreScrapeAction(PreScrapeActionType.SetBrowserSize);
+    public record NavigateTo(string Url) : PreScrapeAction(PreScrapeActionType.NavigateTo);
     public record UrlRequest(Uri Url, ResourceType ResourceType, List<PreScrapeAction> PreScrapeActions);
     
     public enum ScrapeResult
