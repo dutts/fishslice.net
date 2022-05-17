@@ -31,10 +31,8 @@ services:
         limits:
           cpus: "1"
     volumes:
-      #- /home/docker-user/fishslice/logs:/app/logs
-      - /Users/rdutton/Documents/github/fishslice/logs:/app/logs
+      - ~/dev/fishslice/logs:/app/logs
     depends_on:
       - selenium-hub
     ports:
-      - 8888:80
-      - 8443:443
+      - 80:80
