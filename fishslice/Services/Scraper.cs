@@ -5,192 +5,189 @@ using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp.Html;
 using AngleSharp.Html.Parser;
+using fishslice.Extensions;
 using Microsoft.Extensions.Logging;
-using OpenQA.Selenium;
-using OpenQA.Selenium.Support.UI;
+using Microsoft.Playwright;
 
-namespace fishslice.Services
+namespace fishslice.Services;
+
+public class Scraper(ILogger logger)
 {
-    public class Scraper : IDisposable
+    public async Task<UriScrapeResponse> Scrape(Guid requestId, UrlRequest urlRequest,
+        CancellationToken cancellationToken)
     {
-        private readonly ILogger _logger;
-        private readonly IWebDriver _webDriver;
+        var url = urlRequest.Url;
 
-        public Scraper(ILogger logger, IRemoteWebDriverFactory remoteWebDriverFactory)
+        try
         {
-            _logger = logger;
-            _webDriver = remoteWebDriverFactory.GetRemoteWebDriver();
-        }
-        
-        public async Task<UriScrapeResponse> Scrape(Guid requestId, UrlRequest urlRequest, CancellationToken cancellationToken)
-        {
-            var url = urlRequest.Url;
-
-            _logger.LogInformation($"{requestId} : Received request, navigating to '{url}'");
-
-            try
+            using var playwright = await Playwright.CreateAsync();
+            await using var browser = await playwright.Chromium.LaunchAsync();
+            await using var context = await browser.NewContextAsync(new BrowserNewContextOptions
             {
-                _webDriver.Navigate().GoToUrl(url);
-
-                if (urlRequest.PreScrapeActions != null && urlRequest.PreScrapeActions.Count > 0)
-                {
-                    await PerformScrapeActions(urlRequest.PreScrapeActions, requestId, cancellationToken);
-                }
-
-                switch (urlRequest.ResourceType)
-                {
-                    case ResourceType.PageSource:
-                    {
-                        _logger.LogInformation($"{requestId} : Handling page source request for '{url}'");
-                        var rawPageSource = _webDriver.PageSource;
-                        var pageSource = rawPageSource;
-                        try
-                        {
-                            var htmlParser = new HtmlParser();
-                            using var document = await htmlParser.ParseDocumentAsync(rawPageSource);
-                            await using var sw = new StringWriter();
-                            document.ToHtml(sw, new PrettyMarkupFormatter());
-                            pageSource = sw.ToString();
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.LogError(e, $"{requestId} : Exception while trying to pretty print page source, reverting to raw");
-                        }
-                        return new UriScrapeResponse(requestId, ScrapeResult.Ok, pageSource);
-                    }
-                    case ResourceType.Screenshot:
-                    {
-                        _logger.LogInformation($"{requestId} : Handling screenshot request for '{url}'");
-                        await Task.Delay(1000, cancellationToken);
-                        _logger.LogInformation($"{requestId} : Begin screenshotting '{url}'");
-                        var screenshotString = ((ITakesScreenshot)_webDriver).GetScreenshot().AsBase64EncodedString;
-                        _logger.LogInformation($"{requestId} : End screenshotting '{url}'");
-                        return new UriScrapeResponse(requestId, ScrapeResult.Ok, screenshotString);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError($"{requestId} : Exception occurred in WebDriver, '{e}");
-                return new UriScrapeResponse(requestId, ScrapeResult.Error, e.ToString());
-            }
-            return new UriScrapeResponse(requestId, ScrapeResult.Error, null);
-        }
-
-        private async Task PerformScrapeActions(List<PreScrapeAction> scrapeActions, Guid requestId, CancellationToken cancellationToken)
-        {
-            for(var i = 0; i < scrapeActions.Count; i++)
-            {
-                _logger.LogInformation($"{requestId} : Action {i + 1} (of {scrapeActions.Count})");
-                var currentAction = scrapeActions[i];
-
-              
-                switch (scrapeActions[i].Type)
-                {
-                    case PreScrapeActionType.Sleep:
-                        await HandleSleep((Sleep)currentAction, requestId, cancellationToken);
-                        break;
-                    case PreScrapeActionType.WaitForElement:
-                        HandleWaitForElement((WaitForElement)currentAction, requestId, cancellationToken);
-                        break;
-                    case PreScrapeActionType.SetInputElement:
-                        HandleSetInputElement((SetInputElement)currentAction, requestId, cancellationToken);
-                        break;
-                    case PreScrapeActionType.ClickButton:
-                        HandleClickButton((ClickButton)currentAction, requestId, cancellationToken);
-                        break;
-                    case PreScrapeActionType.SetBrowserSize:
-                        HandleSetBrowserSize((SetBrowserSize)currentAction, requestId, cancellationToken);
-                        break;
-                    case PreScrapeActionType.NavigateTo:
-                        HandleNavigateTo((NavigateTo)currentAction, requestId, cancellationToken);
-                        break;
-                }
-            }
-            //throw new NotImplementedException();
-        }
-
-        private void HandleClickButton(ClickButton currentAction, Guid requestId, CancellationToken cancellationToken)
-        {
-            _logger.LogInformation(
-                $"{requestId} : Handling an ClickButton action");
-            
-            if (currentAction.WaitForMilliseconds > 0)
-            {
-                HandleWaitForElement(new WaitForElement(currentAction.SelectorXPath, currentAction.WaitForMilliseconds), requestId, cancellationToken);
-            }
-            
-            var button = _webDriver.FindElement(By.XPath(currentAction.SelectorXPath));
-            button.Click();
-        }
-
-        private void HandleSetInputElement(SetInputElement currentAction, Guid requestId, CancellationToken cancellationToken)
-        {
-            _logger.LogInformation(
-                $"{requestId} : Handling an SetInput action");
-
-            if (currentAction.WaitForMilliseconds > 0)
-            {
-                HandleWaitForElement(new WaitForElement(currentAction.SelectorXPath, currentAction.WaitForMilliseconds), requestId, cancellationToken);
-            }
-            
-            var inputElement = _webDriver.FindElement(By.XPath(currentAction.SelectorXPath));
-            inputElement.SendKeys(currentAction.Value);
-        }
-
-        private void HandleWaitForElement(WaitForElement waitForElementAction, Guid requestId, CancellationToken cancellationToken)
-        {
-            _logger.LogInformation(
-                $"{requestId} : Handling a WaitFor action for {waitForElementAction.WaitForMilliseconds}ms");
-            var wait = new WebDriverWait(_webDriver, TimeSpan.FromMilliseconds(waitForElementAction.WaitForMilliseconds));
-            wait.Until(webDriver =>
-            {
-                if (cancellationToken.IsCancellationRequested) return true;
-                try
-                {
-                    _logger.LogInformation(
-                        $"{requestId} : Waiting for XPath '{waitForElementAction.SelectorXPath}'");
-                    return webDriver.FindElement(By.XPath(waitForElementAction.SelectorXPath)).Displayed;
-                }
-                catch (StaleElementReferenceException)
-                {
-                    return false;
-                }
-                catch (NoSuchElementException)
-                {
-                    return false;
-                }
+                UserAgent = urlRequest.UserAgent ??
+                            "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15"
             });
+
+            var page = await context.NewPageAsync();
+
+            if (urlRequest.CustomHeaders != null)
+            {
+                await page.SetExtraHTTPHeadersAsync(urlRequest.CustomHeaders);
+            }
+
+            logger.LogInformation("Navigating to url");
+            await page.GotoAsync(url.AbsoluteUri);
+
+            switch (urlRequest.ResourceType)
+            {
+                case ResourceType.PageSource:
+                {
+                    logger.LogInformation("Handling page source request");
+
+                    if (urlRequest.PreScrapeActions is { Count: > 0 })
+                    {
+                        await PerformScrapeActions(browser, page, urlRequest.PreScrapeActions, cancellationToken);
+                    }
+
+                    var rawPageSource = await page.ContentAsync();
+
+                    var pageSource = rawPageSource;
+
+                    if (!urlRequest.PrettyPrintOutput)
+                        return new UriScrapeResponse(requestId, ScrapeResult.Ok, rawPageSource);
+
+                    try
+                    {
+                        var htmlParser = new HtmlParser();
+                        using var document = await htmlParser.ParseDocumentAsync(rawPageSource);
+                        await using var sw = new StringWriter();
+                        document.ToHtml(sw, new PrettyMarkupFormatter());
+                        pageSource = sw.ToString();
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogError(e, "Exception while trying to pretty print page source, reverting to raw");
+                    }
+
+                    return new UriScrapeResponse(requestId, ScrapeResult.Ok, pageSource);
+                }
+                case ResourceType.Screenshot:
+                {
+                    logger.LogInformation("Handling screenshot request");
+                        
+                    if (urlRequest.PreScrapeActions is { Count: > 0 })
+                    {
+                        await PerformScrapeActions(browser, page, urlRequest.PreScrapeActions, cancellationToken);
+                    }
+                        
+                    await Task.Delay(1000, cancellationToken);
+                    logger.LogInformation("Begin screenshotting");
+                    var buffer = await page.ScreenshotAsync();
+                    logger.LogInformation("End screenshotting");
+                    return new UriScrapeResponse(requestId, ScrapeResult.Ok, Convert.ToBase64String(buffer));
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            logger.LogError($"{requestId} : Exception occurred in WebDriver, '{e}");
+            return new UriScrapeResponse(requestId, ScrapeResult.Error, e.ToString());
         }
 
-        private async Task HandleSleep(Sleep sleepAction, Guid requestId, CancellationToken cancellationToken)
-        {
-            _logger.LogInformation($"{requestId} : Delaying for {sleepAction.Milliseconds}ms");
-            await Task.Delay(sleepAction.Milliseconds, cancellationToken);
-        }
-        
-        private void HandleSetBrowserSize(SetBrowserSize currentAction, Guid requestId, CancellationToken cancellationToken)
-        {
-            _logger.LogInformation($"{requestId} : Handling SetBrowserSize action");
+        return new UriScrapeResponse(requestId, ScrapeResult.Error, null);
+    }
 
-            SetBrowserWindowSize(requestId, currentAction.Width, currentAction.Height);
-        }
-        
-        private void SetBrowserWindowSize(Guid requestId, int width, int height)
+    private async Task PerformScrapeActions(IBrowser browser, IPage page, List<PreScrapeAction> scrapeActions,
+        CancellationToken cancellationToken)
+    {
+        for (var i = 0; i < scrapeActions.Count; i++)
         {
-            _logger.LogInformation($"{requestId} : Setting browser size to {width} W x {height} H");
-            _webDriver.Manage().Window.Size = new System.Drawing.Size(width, height);
+            logger.LogInformation("Action {i + 1} (of {scrapeActions.Count})", i + 1, scrapeActions.Count);
+            var currentAction = scrapeActions[i];
+
+            // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+            switch (scrapeActions[i].Type)
+            {
+                case PreScrapeActionType.Sleep:
+                    await HandleSleep((Sleep)currentAction, cancellationToken);
+                    break;
+                case PreScrapeActionType.WaitForElement:
+                    await HandleWaitForElement(page, (WaitForElement)currentAction);
+                    break;
+                case PreScrapeActionType.SetInputElement:
+                    await HandleSetInputElement(page, (SetInputElement)currentAction);
+                    break;
+                case PreScrapeActionType.ClickButton:
+                    await HandleClickButton(page, (ClickButton)currentAction);
+                    break;
+                case PreScrapeActionType.SetBrowserSize:
+                    await HandleSetBrowserSize(browser, (SetBrowserSize)currentAction);
+                    break;
+                case PreScrapeActionType.NavigateTo:
+                    await HandleNavigateTo(page, (NavigateTo)currentAction);
+                    break;
+            }
         }
-        
-        private void HandleNavigateTo(NavigateTo currentAction, Guid requestId, CancellationToken cancellationToken)
+        //throw new NotImplementedException();
+    }
+
+    private async Task HandleClickButton(IPage page, ClickButton currentAction)
+    {
+        logger.LogInformation("Handling a ClickButton action");
+
+        if (currentAction.WaitForMilliseconds > 0)
         {
-            _logger.LogInformation($"{requestId} : Navigating to {currentAction.Url}");
-            _webDriver.Navigate().GoToUrl(currentAction.Url);
+            await HandleWaitForElement(page, new WaitForElement(currentAction.SelectorXPath.SanitiseXPath(),
+                currentAction.WaitForMilliseconds));
         }
-        
-        public void Dispose()
+
+        await page.Locator(currentAction.SelectorXPath.SanitiseXPath()).ClickAsync();
+    }
+
+    private async Task HandleSetInputElement(IPage page, SetInputElement currentAction)
+    {
+        logger.LogInformation("Handling an SetInput action");
+
+        if (currentAction.WaitForMilliseconds > 0)
         {
-            _webDriver.Dispose();
+            await HandleWaitForElement(page, new WaitForElement(currentAction.SelectorXPath.SanitiseXPath(),
+                currentAction.WaitForMilliseconds));
         }
+
+        await page.Locator(currentAction.SelectorXPath.SanitiseXPath()).FillAsync(currentAction.Value);
+    }
+
+    private async Task HandleWaitForElement(IPage page, WaitForElement waitForElementAction)
+    {
+        logger.LogInformation("Handling a WaitFor action for {waitForElementAction.WaitForMilliseconds}ms",
+            waitForElementAction.WaitForMilliseconds);
+        await page.WaitForSelectorAsync(waitForElementAction.SelectorXPath.SanitiseXPath());
+    }
+
+    private async Task HandleSleep(Sleep sleepAction, CancellationToken cancellationToken)
+    {
+        logger.LogInformation("Delaying for {sleepAction.Milliseconds}ms", sleepAction.Milliseconds);
+        await Task.Delay(sleepAction.Milliseconds, cancellationToken);
+    }
+
+    private async Task HandleSetBrowserSize(IBrowser browser, SetBrowserSize setBrowserSizeAction)
+    {
+        logger.LogInformation("Handling SetBrowserSize action, setting browser size to {Width} W x {Height} H",
+            setBrowserSizeAction.Width, setBrowserSizeAction.Height);
+        var options = new BrowserNewContextOptions
+        {
+            ViewportSize = new ViewportSize
+            {
+                Height = setBrowserSizeAction.Height,
+                Width = setBrowserSizeAction.Width
+            }
+        };
+        await browser.NewContextAsync(options);
+    }
+
+    private async Task HandleNavigateTo(IPage page, NavigateTo navigateToAction)
+    {
+        logger.LogInformation("Navigating to {navigateToActionUrl}", navigateToAction.Url);
+        await page.GotoAsync(navigateToAction.Url);
     }
 }

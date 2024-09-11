@@ -1,38 +1,12 @@
-﻿version: '3.4'
-
-services:
-  
-  selenium-hub:
-    image: selenium/hub:3.141.59
-    container_name: selenium-hub
-
-  selenium-node-chrome:
-      image: selenium/node-chrome:3.141.59
-      depends_on:
-        - selenium-hub
-      deploy:
-        resources:
-          limits:
-            cpus: "1"
-            memory: "512M"
-      environment:
-        - HUB_HOST=selenium-hub
-        - HUB_PORT=4444
-        - NODE_MAX_INSTANCES=5
-        - NODE_MAX_SESSION=5
+﻿services:
   
   fishslice:
-    image: ${DOCKER_REGISTRY-}fishslice
-    build:
-      context: .
-      dockerfile: fishslice/Dockerfile
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-    volumes:
-      - ~/dev/fishslice/logs:/app/logs
-    depends_on:
-      - selenium-hub
+    image: fishslice
     ports:
       - 80:80
+    healthcheck:
+      test: /usr/bin/wget --spider --tries=1 --no-verbose http://localhost/health || exit 1
+      interval: 60s
+      retries: 5
+      start_period: 60s
+      timeout: 10s

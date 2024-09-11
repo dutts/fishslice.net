@@ -10,8 +10,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fishslice", "fishslice\fishslice.csproj", "{9EA12178-AC73-4D1D-9280-F1E6A8A9CAC0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fishslice.tests", "fishslice.tests\fishslice.tests.csproj", "{D740E02A-1332-4D2E-AB2D-0998B472EF15}"
-EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{F9CEDE8E-4466-485B-86B5-90A414B834F3}"
 EndProject
 Global
@@ -24,10 +22,6 @@ Global
 		{9EA12178-AC73-4D1D-9280-F1E6A8A9CAC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9EA12178-AC73-4D1D-9280-F1E6A8A9CAC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9EA12178-AC73-4D1D-9280-F1E6A8A9CAC0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D740E02A-1332-4D2E-AB2D-0998B472EF15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D740E02A-1332-4D2E-AB2D-0998B472EF15}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D740E02A-1332-4D2E-AB2D-0998B472EF15}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D740E02A-1332-4D2E-AB2D-0998B472EF15}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F9CEDE8E-4466-485B-86B5-90A414B834F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F9CEDE8E-4466-485B-86B5-90A414B834F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9CEDE8E-4466-485B-86B5-90A414B834F3}.Release|Any CPU.ActiveCfg = Release|Any CPU

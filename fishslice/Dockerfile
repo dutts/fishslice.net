@@ -1,24 +1,43 @@
-#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-# From the solution root (rather than the dockerfile location)
-# docker build -f fishslice/Dockerfile --force-rm -t fishslice .
-
-FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+ARG TARGETARCH
 WORKDIR /app
-EXPOSE 80
 
-FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
+COPY ./fishslice/install-powershell.sh /scripts/install-powershell.sh
+RUN chmod +x /scripts/install-powershell.sh
+RUN /scripts/install-powershell.sh
+
+RUN    apt-get update \
+    && apt-get install -y wget \
+    && rm -rf /var/lib/apt/lists/* 
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+
 WORKDIR /src
+
 COPY ["fishslice/fishslice.csproj", "fishslice/"]
 RUN dotnet restore "fishslice/fishslice.csproj"
 COPY . .
 WORKDIR "/src/fishslice"
 RUN dotnet build "fishslice.csproj" -c Release -o /app/build
 
+WORKDIR /src_playwright
+RUN dotnet new console --no-restore
+RUN dotnet add package Microsoft.Playwright
+RUN dotnet build --property:PlaywrightPlatform=all
+
+FROM base AS playwright-install
+COPY --from=build /src_playwright/bin/Debug/net8.0/ /src/
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir /ms-playwright
+RUN ["pwsh", "/src/playwright.ps1", "install", "--with-deps", "chromium"]
+RUN rm -rf /src/*
+
 FROM build AS publish
+WORKDIR "/src/fishslice"
 RUN dotnet publish "fishslice.csproj" -c Release -o /app/publish
 
-FROM base AS final
+FROM playwright-install AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
 ENTRYPOINT ["dotnet", "fishslice.dll"]
