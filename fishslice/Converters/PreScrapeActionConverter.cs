@@ -13,12 +13,10 @@ public class PreScrapeActionConverter : JsonConverter<PreScrapeAction>
         // brittle if our input schema changes.
         // ReSharper disable once InvertIf
         if (JsonDocument.TryParseValue(ref reader, out var doc))
-        {
             try
             {
-                if (doc.RootElement.TryGetProperty("Type", out var typeString) && 
+                if (doc.RootElement.TryGetProperty("Type", out var typeString) &&
                     Enum.TryParse<PreScrapeActionType>(typeString.GetString(), out var scrapeActionType))
-                {
                     // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
                     switch (scrapeActionType)
                     {
@@ -35,14 +33,12 @@ public class PreScrapeActionConverter : JsonConverter<PreScrapeAction>
                         case PreScrapeActionType.NavigateTo:
                             return JsonSerializer.Deserialize<NavigateTo>(doc.RootElement.GetRawText(), options);
                     }
-                }
             }
             finally
             {
                 doc.Dispose();
             }
 
-        }
         throw new JsonException();
     }
 

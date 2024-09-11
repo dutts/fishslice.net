@@ -7,10 +7,10 @@ namespace fishslice;
 internal class ServiceVersionMiddleware(RequestDelegate next)
 {
     private static readonly string Service;
-    
+
     static ServiceVersionMiddleware()
     {
-        Service = Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;  
+        Service = Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -20,7 +20,7 @@ internal class ServiceVersionMiddleware(RequestDelegate next)
             context.Response.Headers["X-Service"] = Service;
             return Task.CompletedTask;
         });
-        
+
         await next(context);
     }
 }

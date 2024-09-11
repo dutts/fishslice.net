@@ -14,7 +14,7 @@ namespace fishslice.Controllers;
 public class ScrapeController(ILogger<ScrapeController> logger) : ControllerBase
 {
     /// <summary>
-    /// Requests a URL from the scraper
+    ///     Requests a URL from the scraper
     /// </summary>
     /// <param name="request"></param>
     /// <returns>The Scrape response, as page source or screenshot</returns>
@@ -44,7 +44,7 @@ public class ScrapeController(ILogger<ScrapeController> logger) : ControllerBase
                 return BadRequest(
                     "Invalid uri string, needs to be a full absolute uri, e.g. 'http://www.google.com'");
             }
-                
+
             var scraper = new Scraper(logger);
             using var cancellationTokenSource = new CancellationTokenSource();
 
@@ -62,10 +62,10 @@ public class ScrapeController(ILogger<ScrapeController> logger) : ControllerBase
             return Ok(response.Result);
         }
     }
-        
-        
+
+
     /// <summary>
-    /// Requests a screenshot from the scraper, returned as an image.png so displays in swagger UI
+    ///     Requests a screenshot from the scraper, returned as an image.png so displays in swagger UI
     /// </summary>
     [HttpPost("/requestScreenshotAsImage")]
     [SwaggerRequestExample(typeof(UrlRequest), typeof(UrlRequestExample))]

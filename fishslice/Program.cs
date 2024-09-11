@@ -1,18 +1,18 @@
 using System;
 using System.Reflection;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Serilog;
-using Serilog.Formatting.Json;
 using System.Text.Json.Serialization;
 using fishslice;
 using fishslice.Converters;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using Serilog;
+using Serilog.Formatting.Json;
 using Swashbuckle.AspNetCore.Filters;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
@@ -103,7 +103,7 @@ app.UseSwaggerUI(c =>
 });
 app.UseDeveloperExceptionPage();
 app.MapControllers();
-   
+
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 LogStartupMessage(logger);
 app.Run();

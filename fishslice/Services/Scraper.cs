@@ -30,10 +30,7 @@ public class Scraper(ILogger logger)
 
             var page = await context.NewPageAsync();
 
-            if (urlRequest.CustomHeaders != null)
-            {
-                await page.SetExtraHTTPHeadersAsync(urlRequest.CustomHeaders);
-            }
+            if (urlRequest.CustomHeaders != null) await page.SetExtraHTTPHeadersAsync(urlRequest.CustomHeaders);
 
             logger.LogInformation("Navigating to url");
             await page.GotoAsync(url.AbsoluteUri);
@@ -46,9 +43,7 @@ public class Scraper(ILogger logger)
                     logger.LogInformation("Handling page source request");
 
                     if (urlRequest.PreScrapeActions is { Count: > 0 })
-                    {
                         await PerformScrapeActions(browser, page, urlRequest.PreScrapeActions, cancellationToken);
-                    }
 
                     var rawPageSource = await page.ContentAsync();
 
@@ -75,12 +70,10 @@ public class Scraper(ILogger logger)
                 case ResourceType.Screenshot:
                 {
                     logger.LogInformation("Handling screenshot request");
-                        
+
                     if (urlRequest.PreScrapeActions is { Count: > 0 })
-                    {
                         await PerformScrapeActions(browser, page, urlRequest.PreScrapeActions, cancellationToken);
-                    }
-                        
+
                     await Task.Delay(1000, cancellationToken);
                     logger.LogInformation("Begin screenshotting");
                     var buffer = await page.ScreenshotAsync();
@@ -137,10 +130,8 @@ public class Scraper(ILogger logger)
         logger.LogInformation("Handling a ClickButton action");
 
         if (currentAction.WaitForMilliseconds > 0)
-        {
             await HandleWaitForElement(page, new WaitForElement(currentAction.SelectorXPath.SanitiseXPath(),
                 currentAction.WaitForMilliseconds));
-        }
 
         await page.Locator(currentAction.SelectorXPath.SanitiseXPath()).ClickAsync();
     }
@@ -150,10 +141,8 @@ public class Scraper(ILogger logger)
         logger.LogInformation("Handling an SetInput action");
 
         if (currentAction.WaitForMilliseconds > 0)
-        {
             await HandleWaitForElement(page, new WaitForElement(currentAction.SelectorXPath.SanitiseXPath(),
                 currentAction.WaitForMilliseconds));
-        }
 
         await page.Locator(currentAction.SelectorXPath.SanitiseXPath()).FillAsync(currentAction.Value);
     }
