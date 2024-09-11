@@ -61,7 +61,7 @@ builder.Services
             .AddHttpClientInstrumentation()
             .AddOtlpExporter(opts =>
             {
-                opts.Endpoint = new Uri(builder.Configuration["Otlp:Endpoint"]);
+                opts.Endpoint = new Uri(builder.Configuration["Otlp:Endpoint"] ?? string.Empty);
             });
         var meterName = configurationManager["fishsliceConfig:MeterName"] ??
                         throw new NullReferenceException("Meter missing a name");
@@ -88,7 +88,7 @@ app.UseSerilogRequestLogging(opts =>
     //opts.GetLevel = LogHelper.ExcludeHealthChecks;
 });
 
-app.MapHealthChecks("/health", new HealthCheckOptions()
+app.MapHealthChecks("/health", new HealthCheckOptions
 {
     AllowCachingResponses = false
 });

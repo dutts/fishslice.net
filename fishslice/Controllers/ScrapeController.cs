@@ -57,11 +57,9 @@ public class ScrapeController(ILogger<ScrapeController> logger) : ControllerBase
                 logger.LogInformation("Error, returning 204");
                 return new NoContentResult();
             }
-            else
-            {
-                logger.LogInformation("Scrape OK, returning 200");
-                return Ok(response.Result);
-            }
+
+            logger.LogInformation("Scrape OK, returning 200");
+            return Ok(response.Result);
         }
     }
         
@@ -107,13 +105,11 @@ public class ScrapeController(ILogger<ScrapeController> logger) : ControllerBase
                 logger.LogInformation("Error, returning 204");
                 return new NoContentResult();
             }
-            else
-            {
-                logger.LogInformation("Scrape OK, returning image");
-                var tmpFile = Path.GetTempFileName();
-                System.IO.File.WriteAllBytes(tmpFile, Convert.FromBase64String(response.Result.ResultString));
-                return PhysicalFile(tmpFile, "image/png");
-            }
+
+            logger.LogInformation("Scrape OK, returning image");
+            var tmpFile = Path.GetTempFileName();
+            System.IO.File.WriteAllBytes(tmpFile, Convert.FromBase64String(response.Result.ResultString));
+            return PhysicalFile(tmpFile, "image/png");
         }
     }
 }

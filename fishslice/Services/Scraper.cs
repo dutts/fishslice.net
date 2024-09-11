@@ -38,6 +38,7 @@ public class Scraper(ILogger logger)
             logger.LogInformation("Navigating to url");
             await page.GotoAsync(url.AbsoluteUri);
 
+            // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
             switch (urlRequest.ResourceType)
             {
                 case ResourceType.PageSource:
@@ -90,7 +91,7 @@ public class Scraper(ILogger logger)
         }
         catch (Exception e)
         {
-            logger.LogError($"{requestId} : Exception occurred in WebDriver, '{e}");
+            logger.LogError(e, "Exception occurred in WebDriver");
             return new UriScrapeResponse(requestId, ScrapeResult.Error, e.ToString());
         }
 

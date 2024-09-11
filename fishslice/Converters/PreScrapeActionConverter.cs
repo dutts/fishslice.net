@@ -11,13 +11,15 @@ public class PreScrapeActionConverter : JsonConverter<PreScrapeAction>
         // NB: This is currently the best way of performing polymorphic
         // deserialisation of types using System.Text.Json, but is very
         // brittle if our input schema changes.
-        if (JsonDocument.TryParseValue(ref reader, out JsonDocument doc))
+        // ReSharper disable once InvertIf
+        if (JsonDocument.TryParseValue(ref reader, out var doc))
         {
             try
             {
                 if (doc.RootElement.TryGetProperty("Type", out var typeString) && 
                     Enum.TryParse<PreScrapeActionType>(typeString.GetString(), out var scrapeActionType))
                 {
+                    // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
                     switch (scrapeActionType)
                     {
                         case PreScrapeActionType.Sleep:
@@ -46,6 +48,7 @@ public class PreScrapeActionConverter : JsonConverter<PreScrapeAction>
 
     public override void Write(Utf8JsonWriter writer, PreScrapeAction value, JsonSerializerOptions options)
     {
+        // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
         switch (value.Type)
         {
             case PreScrapeActionType.Sleep:
@@ -59,6 +62,12 @@ public class PreScrapeActionConverter : JsonConverter<PreScrapeAction>
                 break;
             case PreScrapeActionType.ClickButton:
                 JsonSerializer.Serialize(writer, (ClickButton)value, typeof(ClickButton), options);
+                break;
+            case PreScrapeActionType.SetBrowserSize:
+                JsonSerializer.Serialize(writer, (SetBrowserSize)value, typeof(SetBrowserSize), options);
+                break;
+            case PreScrapeActionType.NavigateTo:
+                JsonSerializer.Serialize(writer, (NavigateTo)value, typeof(NavigateTo), options);
                 break;
         }
     }
