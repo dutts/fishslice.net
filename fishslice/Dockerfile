@@ -15,10 +15,10 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY ["fishslice/fishslice.csproj", "fishslice/"]
-RUN dotnet restore "fishslice/fishslice.csproj"
+RUN dotnet restore "fishslice/fishslice.csproj" -a $TARGETARCH
 COPY . .
 WORKDIR "/src/fishslice"
-RUN dotnet build "fishslice.csproj" -c Release -o /app/build
+RUN dotnet build "fishslice.csproj" -c Release -a $TARGETARCH -o /app/build
 
 WORKDIR /src_playwright
 RUN dotnet new console --no-restore
@@ -34,7 +34,7 @@ RUN rm -rf /src/*
 
 FROM build AS publish
 WORKDIR "/src/fishslice"
-RUN dotnet publish "fishslice.csproj" -c Release -o /app/publish
+RUN dotnet publish "fishslice.csproj" -c Release -a $TARGETARCH -o /app/publish
 
 FROM playwright-install AS final
 WORKDIR /app
