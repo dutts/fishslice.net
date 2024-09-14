@@ -28,7 +28,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Install dependencies
-      run: dotnet restore
+      run: dotnet restore fishslice/fishslice.csproj
       
     - name: Build
       run: dotnet build fishslice/fishslice.csproj --configuration Release --no-restore
