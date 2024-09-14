@@ -65,7 +65,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: fishslice
+          context: ./fishslice
           push: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/fishslice:latest
 
