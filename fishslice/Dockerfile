@@ -34,7 +34,7 @@ RUN rm -rf /src/*
 
 FROM build AS publish
 WORKDIR "/src/fishslice"
-RUN dotnet publish "fishslice.csproj" -c Release -a $TARGETARCH -o /app/publish
+RUN dotnet publish "fishslice.csproj" -c Release -a ${TARGETARCH} -o /app/publish
 
 FROM playwright-install AS final
 WORKDIR /app
