@@ -1,7 +1,7 @@
 ﻿services:
   
   fishslice:
-    image: dutts/fishslice:latest
+    image: dutts/fishslice:main
     ports:
       - 80:80
     healthcheck:
