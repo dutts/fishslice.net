@@ -107,9 +107,55 @@ public class ScrapeController(ILogger<ScrapeController> logger) : ControllerBase
             }
 
             logger.LogInformation("Scrape OK, returning image");
+            
             var tmpFile = Path.GetTempFileName();
-            System.IO.File.WriteAllBytes(tmpFile, Convert.FromBase64String(response.Result.ResultString));
+            System.IO.File.WriteAllBytes(tmpFile, Convert.FromBase64String(((UriScrapeResponse)response.Result).ResultString));
             return PhysicalFile(tmpFile, "image/png");
+        }
+    }
+    
+    [HttpPost("/requestDownloadFile")]
+    [SwaggerRequestExample(typeof(UrlRequest), typeof(UrlFileRequestExample))]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Produces("application/octet-stream")]
+    public IActionResult PostRequestDownloadFile(UrlRequest request)
+    {
+        var requestId = Guid.NewGuid();
+
+        using (logger.BeginScope("{RequestId} : Received request for '{RequestResourceType}' of {RequestUrl}'",
+                   requestId, request.ResourceType, request.Url))
+        {
+            try
+            {
+                _ = request.Url.AbsoluteUri;
+            }
+            catch (Exception)
+            {
+                logger.LogError("Invalid uri string received ");
+                return BadRequest(
+                    "Invalid uri string, needs to be a full absolute uri, e.g. 'http://www.google.com'");
+            }
+            
+            var scraper = new Scraper(logger);
+            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+
+            var cancellationToken = cancellationTokenSource.Token;
+            
+            var response = scraper.Scrape(requestId, request with { ResourceType = ResourceType.DownloadFile },
+                cancellationToken);
+
+            if (response.Result == null)
+            {
+                logger.LogInformation("Error, returning 204");
+                return new NoContentResult();
+            }
+
+            logger.LogInformation("Scrape OK, returning file");
+            var uriFileScrapeResponse = (UriFileScrapeResponse)response.Result;
+            
+            return File(System.IO.File.OpenRead(uriFileScrapeResponse.OutputFilename), "application/octet-stream", uriFileScrapeResponse.SuggestedFilename);
         }
     }
 }
@@ -129,6 +175,23 @@ public class UrlRequestExample : IExamplesProvider<UrlRequest>
                 new WaitForElement(
                     "//*[@id=\"searchbox_homepage\"]/div/div/div/button[contains(@aria-label, 'Search')]"),
                 new ClickButton("//*[@id=\"searchbox_homepage\"]/div/div/div/button[contains(@aria-label, 'Search')]")
+            ]);
+    }
+}
+
+public class UrlFileRequestExample : IExamplesProvider<UrlRequest>
+{
+    public UrlRequest GetExamples()
+    {
+        return new UrlRequest(new Uri("https://www.racingtv.com/results/2023-12-08/sandown-park/1240"),
+            ResourceType.PageSource,
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15",
+            false,
+            [
+                new WaitForElement(
+                    "//*[@id=\"appScrollView\"]/div/div[1]/div/div/div[1]/div[1]/div/div/div/div[1]/div[1]/div[1]/div[2]/div[2]/div/div[3]/div[1]/div[1]/div"),
+                new ClickButton(
+                    "//*[@id=\"appScrollView\"]/div/div[1]/div/div/div[1]/div[1]/div/div/div/div[1]/div[1]/div[1]/div[2]/div[2]/div/div[3]/div[1]/div[1]/div")
             ]);
     }
 }

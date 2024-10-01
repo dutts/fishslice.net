@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp.Html;
@@ -13,7 +14,7 @@ namespace fishslice.Services;
 
 public class Scraper(ILogger logger)
 {
-    public async Task<UriScrapeResponse> Scrape(Guid requestId, UrlRequest urlRequest,
+    public async Task<ScrapeResponse> Scrape(Guid requestId, UrlRequest urlRequest,
         CancellationToken cancellationToken)
     {
         var url = urlRequest.Url;
@@ -79,6 +80,25 @@ public class Scraper(ILogger logger)
                     var buffer = await page.ScreenshotAsync();
                     logger.LogInformation("End screenshotting");
                     return new UriScrapeResponse(requestId, ScrapeResult.Ok, Convert.ToBase64String(buffer));
+                }
+                case ResourceType.DownloadFile:
+                {
+                    logger.LogInformation("Handling download file request");
+                    
+                    page.Download += (_, download) =>
+                        logger.LogInformation("Downloading '{DownloadUrl}'", download.Url);
+                    
+                    var waitForDownloadTask = page.WaitForDownloadAsync();
+                    
+                    if (urlRequest.PreScrapeActions is { Count: > 0 })
+                        await PerformScrapeActions(browser, page, urlRequest.PreScrapeActions, cancellationToken);
+
+                    var download = await waitForDownloadTask;
+                    
+                    var outputFilename = Path.GetTempFileName();
+                    await download.SaveAsAsync(outputFilename);
+                    
+                    return new UriFileScrapeResponse(requestId, ScrapeResult.Ok, download.SuggestedFilename, outputFilename);
                 }
             }
         }

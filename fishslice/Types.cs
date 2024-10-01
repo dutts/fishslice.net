@@ -6,7 +6,8 @@ namespace fishslice;
 public enum ResourceType
 {
     PageSource,
-    Screenshot
+    Screenshot,
+    DownloadFile
 }
 
 public enum PreScrapeActionType
@@ -50,4 +51,8 @@ public enum ScrapeResult
     Error
 }
 
-public record UriScrapeResponse(Guid RequestId, ScrapeResult ScrapeResult, string ResultString);
+public abstract record ScrapeResponse(Guid RequestId, ScrapeResult ScrapeResult);
+
+public record UriScrapeResponse(Guid RequestId, ScrapeResult ScrapeResult, string ResultString) : ScrapeResponse(RequestId, ScrapeResult);
+
+public record UriFileScrapeResponse(Guid RequestId, ScrapeResult ScrapeResult, string SuggestedFilename, string OutputFilename) : ScrapeResponse(RequestId, ScrapeResult);
